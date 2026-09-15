@@ -70,11 +70,11 @@ export function ChannelListModal({
         }`}
       />
 
-      {/* 左侧抽屉主体 (Left-side Hardware EPG Drawer) */}
+      {/* 右侧抽屉主体 (Right-side Hardware EPG Drawer) */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`absolute top-0 bottom-0 left-0 w-84 sm:w-96 md:w-[410px] max-w-[88vw] h-full bg-[#121418]/95 backdrop-blur-2xl border-r border-neutral-700/60 shadow-[20px_0_50px_rgba(0,0,0,0.85)] flex flex-col transform transition-transform duration-300 ease-out z-10 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`absolute top-0 bottom-0 right-0 w-84 sm:w-96 md:w-[410px] max-w-[88vw] h-full bg-[#121418]/95 backdrop-blur-2xl border-l border-neutral-700/60 shadow-[-20px_0_50px_rgba(0,0,0,0.85)] flex flex-col transform transition-transform duration-300 ease-out z-10 ${
+          isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* 顶部标题栏 (拟物收音/调谐器铭牌风格) */}

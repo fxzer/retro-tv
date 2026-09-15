@@ -86,9 +86,9 @@ export function UIOverlay({
         </div>
       </div>
 
-      {/* 底部左侧快捷操作说明 */}
-      <div className="flex items-end justify-between">
-        <div className="pointer-events-auto bg-neutral-900/75 backdrop-blur-md border border-neutral-800/80 px-4 py-2.5 rounded-xl text-neutral-400 text-xs flex items-center gap-3">
+      {/* 底部快捷操作说明：置于右下角避免遮挡左下角实体遥控器 */}
+      <div className="flex items-end justify-end">
+        <div className="pointer-events-auto bg-neutral-900/75 backdrop-blur-md border border-neutral-800/80 px-4 py-2.5 rounded-xl text-neutral-400 text-xs flex items-center gap-3 shadow-lg">
           <HelpCircle className="w-4 h-4 text-emerald-400 shrink-0" />
           <div className="flex gap-4 text-[11px]">
             <span>🖱️ <b>左键拖拽</b> 环绕 3D 电视机</span>

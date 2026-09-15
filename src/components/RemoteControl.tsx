@@ -62,7 +62,7 @@ export function RemoteControl({
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-6 right-6 z-30 select-none">
+      <div className="fixed bottom-6 left-6 z-30 select-none">
         <button
           onClick={() => setIsMinimized(false)}
           className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900/90 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 rounded-xl shadow-2xl backdrop-blur-md transition-all active:scale-95 group font-mono text-xs"
@@ -76,7 +76,7 @@ export function RemoteControl({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-30 select-none font-mono">
+    <div className="fixed bottom-6 left-6 z-30 select-none font-mono">
       {/* 遥控器外壳 */}
       <div className="w-64 bg-gradient-to-b from-[#22252a] via-[#1a1c20] to-[#121316] text-neutral-200 rounded-3xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-neutral-700/60 backdrop-blur-md relative">
         {/* 顶部红外发射灯 (IR Blaster) */}

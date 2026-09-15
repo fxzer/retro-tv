@@ -269,7 +269,7 @@ export default function App() {
       </div>
 
       {/* 复古荧光 OSD 屏显 */}
-      {isPowerOn && (
+      {isPowerOn && !isGuideOpen && (
         <ChannelOSD
           channelNumber={currentChannel.number}
           channelName={currentChannel.name}
