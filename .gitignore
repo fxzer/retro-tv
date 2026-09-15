@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+
+# Local & environment files
+*.local
+.env
+.env.*
+!.env.example
+
+# Cloudflare Wrangler
+.wrangler/
+
+# System files
+.DS_Store
+Thumbs.db
