@@ -48,6 +48,7 @@ export function TVScene({
   return (
     <Canvas
       shadows
+      gl={{ preserveDrawingBuffer: true }}
       camera={{ position: [0, 0.75, 4.3], fov: 42 }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
     >
