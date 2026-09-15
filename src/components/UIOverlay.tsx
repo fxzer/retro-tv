@@ -1,28 +1,19 @@
 import React from "react";
-import { Tv, Volume2, VolumeX, Sparkles, List, Radio, HelpCircle } from "lucide-react";
-import { Channel, TVPowerState } from "../types/tv";
+import { Tv, Volume2, VolumeX, List, HelpCircle } from "lucide-react";
+import { Channel } from "../types/tv";
 
 interface UIOverlayProps {
-  powerState: TVPowerState;
   currentChannel: Channel;
   isMuted: boolean;
-  onPowerToggle: () => void;
   onMuteToggle: () => void;
   onOpenGuide: () => void;
-  onSelectTestCard: () => void;
 }
 
 export function UIOverlay({
-  powerState,
-  currentChannel,
   isMuted,
-  onPowerToggle,
   onMuteToggle,
   onOpenGuide,
-  onSelectTestCard,
 }: UIOverlayProps) {
-  const isPowerOn = powerState === "on" || powerState === "turning_on";
-
   return (
     <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-6 font-mono select-none">
       {/* 顶部信息栏 */}
@@ -42,20 +33,12 @@ export function UIOverlay({
           </p>
         </div>
 
-        {/* 顶部快捷操作按钮组 */}
+        {/* 顶部快捷操作按钮组：保留节目单与静音快捷键，电视机开关与换台保留实体拟物按键 */}
         <div className="pointer-events-auto flex items-center gap-2">
           <button
-            onClick={onSelectTestCard}
-            className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900/80 hover:bg-neutral-800 text-amber-300 border border-amber-500/30 rounded-xl shadow-lg backdrop-blur-md transition-all active:scale-95 text-xs font-bold"
-            title="每周二下午电视台检修测试卡"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
-            <span>CH 99 测试卡</span>
-          </button>
-
-          <button
             onClick={onOpenGuide}
-            className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-200 border border-neutral-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all active:scale-95 text-xs font-bold"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-200 border border-neutral-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all active:scale-95 text-xs font-bold"
+            title="查看所有电视频道 (快捷键 G)"
           >
             <List className="w-3.5 h-3.5 text-blue-400" />
             <span>节目单</span>
@@ -68,20 +51,9 @@ export function UIOverlay({
                 ? "bg-red-950/60 border-red-500/40 text-red-400"
                 : "bg-neutral-900/80 hover:bg-neutral-800 border-neutral-700/80 text-neutral-200"
             }`}
-            title={isMuted ? "取消静音" : "静音"}
+            title={isMuted ? "取消静音 (快捷键 M)" : "静音 (快捷键 M)"}
           >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={onPowerToggle}
-            className={`px-3.5 py-2 rounded-xl border shadow-lg backdrop-blur-md font-bold text-xs transition-all active:scale-95 flex items-center gap-1.5 ${
-              isPowerOn
-                ? "bg-emerald-600/90 hover:bg-emerald-500 text-white border-emerald-400/50 shadow-emerald-900/40"
-                : "bg-red-800/80 hover:bg-red-700 text-white border-red-500/40 shadow-red-900/40"
-            }`}
-          >
-            <span>{isPowerOn ? "TV: 开机" : "TV: 待机"}</span>
           </button>
         </div>
       </div>

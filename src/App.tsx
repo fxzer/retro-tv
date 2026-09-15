@@ -283,13 +283,10 @@ export default function App() {
 
       {/* 顶部与全局 UI 覆盖层 */}
       <UIOverlay
-        powerState={powerState}
         currentChannel={currentChannel}
         isMuted={isMuted}
-        onPowerToggle={handlePowerToggle}
         onMuteToggle={handleMuteToggle}
         onOpenGuide={() => setIsGuideOpen(true)}
-        onSelectTestCard={() => handleChannelSelectByNumber(99)}
       />
 
       {/* 复古红外实体遥控器 */}

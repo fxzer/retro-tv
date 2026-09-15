@@ -305,6 +305,13 @@ export function RetroTV3D({
             e.stopPropagation();
             onPowerToggle();
           }}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            document.body.style.cursor = "pointer";
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = "auto";
+          }}
         >
           <mesh material={bezelMaterial} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.042, 0.042, 0.02, 24]} />
@@ -357,6 +364,13 @@ export function RetroTV3D({
               e.stopPropagation();
               onChannelPrev();
             }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = "auto";
+            }}
           >
             <boxGeometry args={[0.055, 0.035, 0.02]} />
           </mesh>
@@ -366,6 +380,13 @@ export function RetroTV3D({
             onClick={(e) => {
               e.stopPropagation();
               onChannelNext();
+            }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = "auto";
             }}
           >
             <boxGeometry args={[0.055, 0.035, 0.02]} />
@@ -381,6 +402,13 @@ export function RetroTV3D({
               e.stopPropagation();
               onVolumeDown();
             }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = "auto";
+            }}
           >
             <boxGeometry args={[0.055, 0.035, 0.02]} />
           </mesh>
@@ -390,6 +418,13 @@ export function RetroTV3D({
             onClick={(e) => {
               e.stopPropagation();
               onVolumeUp();
+            }}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={() => {
+              document.body.style.cursor = "auto";
             }}
           >
             <boxGeometry args={[0.055, 0.035, 0.02]} />
@@ -421,6 +456,13 @@ export function RetroTV3D({
         onClick={(e) => {
           e.stopPropagation();
           onAntennaTouch();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "auto";
         }}
       >
         <mesh material={bezelMaterial} position={[0, 0.02, 0]}>
