@@ -46,9 +46,13 @@ export function CRTScreen({
     video.playsInline = true;
     video.autoplay = true;
     video.loop = true;
-    video.muted = isMuted;
+    // 初始以静音启动以绕过浏览器 Autoplay 阻断，实现真正的即开即看
+    video.muted = true;
     video.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
     video.style.display = "none";
+    video.addEventListener("canplay", () => {
+      video.play().catch(() => {});
+    });
     document.body.appendChild(video);
     videoRef.current = video;
 
@@ -71,22 +75,12 @@ export function CRTScreen({
     };
   }, []);
 
-  // 同步音量与静音（非调谐状态下）
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (!isTuningRef.current) {
-      video.muted = isMuted;
-      video.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
-    }
-  }, [volume, isMuted]);
-
-  // 频道实际直播流加载与切换
+  // 频道实际直播流加载与切换（与 powerState 完全解耦，实现后台预热与常驻保活）
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // 每次换台：立即进入调谐雪花态，先静音旧频道避免漏音
+    // 换台时进入调谐雪花态，先静音避免杂音泄露
     isTuningRef.current = true;
     tuningBlendRef.current = 1.0;
     tuneStartTimeRef.current = performance.now();
@@ -106,11 +100,17 @@ export function CRTScreen({
     const isHls = /\.m3u8(?:$|\?)/i.test(streamUrl);
 
     if (isHls && Hls.isSupported()) {
+      // 方案 B：Hls.js 极速起播参数深度优化
       const hls = new Hls({
-        enableWorker: false,
+        enableWorker: true, // 启用 Worker 异步解复用，消除主线程卡顿
         lowLatencyMode: true,
-        backBufferLength: 10,
-        maxBufferLength: 20,
+        liveSyncDurationCount: 1, // 立即从首个分片起播，无需等待积攒 3 个分片
+        liveMaxLatencyDurationCount: 3,
+        maxBufferLength: 4, // 快速轻量缓冲
+        maxMaxBufferLength: 8,
+        initialLiveManifestSize: 1,
+        fragLoadingTimeOut: 6000,
+        manifestLoadingTimeOut: 4000,
       });
       hlsRef.current = hls;
 
@@ -118,11 +118,15 @@ export function CRTScreen({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (powerState === "on") {
-          video.play().catch(() => {
-            video.muted = true;
-            video.play().catch(() => {});
-          });
+        // 静默预加载起播
+        video.muted = true;
+        video.play().catch(() => {});
+      });
+
+      hls.on(Hls.Events.FRAG_BUFFERED, () => {
+        // 分片缓冲就绪后触发播放
+        if (video.paused) {
+          video.play().catch(() => {});
         }
       });
 
@@ -144,28 +148,28 @@ export function CRTScreen({
       });
     } else {
       video.src = streamUrl;
-      if (powerState === "on") {
-        video.play().catch(() => {
-          video.muted = true;
-          video.play().catch(() => {});
-        });
-      }
+      video.muted = true;
+      video.play().catch(() => {});
     }
-  }, [channel, powerState]);
+  }, [channel.id, channel.streamUrl]);
 
-  // 电源开启或关闭时控制视频播放
+  // 电源开启或关闭时控制伴音与播放状态（方案 A：不销毁流，常驻保活）
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (powerState === "on") {
-      if (!channel.isTestCard && channel.streamUrl) {
-        video.play().catch(() => {});
+      video.play().catch(() => {});
+      // 若当前未在换台调谐中，恢复真实伴音
+      if (!isTuningRef.current) {
+        video.muted = isMuted;
+        video.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
       }
-    } else if (powerState === "off") {
-      video.pause();
+    } else {
+      // 关机或待机：静音，保持流在后台接收
+      video.muted = true;
     }
-  }, [powerState, channel]);
+  }, [powerState, isMuted, volume]);
 
   // 创建微凸显像管曲面网格 (Subtle Convex CRT Tube Faceplate)
   const curvedGeometry = useMemo(() => {
@@ -199,12 +203,16 @@ export function CRTScreen({
     const video = videoRef.current;
     const elapsed = (performance.now() - tuneStartTimeRef.current) / 1000;
 
-    // 真实电视频道实时流是否就绪出帧：
-    // 在 MSE 播放模式下，videoWidth > 0 且 (readyState >= 1 或 currentTime > 0) 代表视频流帧已可提取
+    // 若处于开机状态且视频暂停，自动唤醒起播
+    if (powerState === "on" && video && video.paused && video.readyState >= 1) {
+      video.play().catch(() => {});
+    }
+
+    // 真实电视频道实时流是否就绪出帧（尺寸存在且已产生当前帧数据）
     const hasLiveVideo =
       Boolean(video) &&
       video!.videoWidth > 0 &&
-      (video!.readyState >= 1 || video!.currentTime > 0) &&
+      (video!.readyState >= 2 || video!.currentTime > 0) &&
       !channel.isTestCard &&
       Boolean(channel.streamUrl);
 
@@ -212,9 +220,12 @@ export function CRTScreen({
     if (hasLiveVideo && elapsed >= 0.35) {
       if (isTuningRef.current) {
         isTuningRef.current = false;
-        // 信号锁定完毕，恢复当前电视频道的真实广播伴音
-        video!.muted = isMuted;
-        video!.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
+        // 信号锁定完毕，若当前处于开机状态，确保起播并恢复广播伴音
+        if (powerState === "on") {
+          video!.play().catch(() => {});
+          video!.muted = isMuted;
+          video!.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
+        }
       }
     } else if (channel.isTestCard && elapsed >= 0.35) {
       if (isTuningRef.current) {
