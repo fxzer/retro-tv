@@ -276,20 +276,47 @@ class RetroTVSoundEngine {
         osc.start(now);
         osc.stop(now + 0.075);
       } else if (type === "remote") {
-        // 导电橡胶按键软微动
+        // 经典电视遥控器导电橡胶软膜触底声 (Muted Rubber Dome Pad Thump)
+        // 遥控器是硅胶软按键接触 PCB 板，声音极其沉闷、微弱、顿实，杜绝任何尖锐清脆的啪啪声
         const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(1200, now);
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.025);
+        const oscGain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.016);
 
-        gain.gain.setValueAtTime(0.25 * this.masterVolume, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        oscGain.gain.setValueAtTime(0.15 * this.masterVolume, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.035);
+        osc.stop(now + 0.022);
+
+        // 微量低通软质按压摩擦缓冲（严格过滤 500Hz 以上高频，消除清脆咔哒声）
+        const bufferSize = Math.floor(ctx.sampleRate * 0.012);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.4));
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(520, now);
+        filter.Q.setValueAtTime(0.8, now);
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.08 * this.masterVolume, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+
+        noise.start(now);
+        noise.stop(now + 0.018);
       } else {
         // 电视机阶梯式硬塑按键清脆弹簧微动
         const bufferSize = ctx.sampleRate * 0.03;
