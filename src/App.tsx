@@ -218,6 +218,10 @@ export default function App() {
         case "T":
           handleAntennaTouch();
           break;
+        case "g":
+        case "G":
+          setIsGuideOpen((prev) => !prev);
+          break;
         default:
           if (e.key >= "1" && e.key <= "9") {
             handleChannelSelectByNumber(Number(e.key));
