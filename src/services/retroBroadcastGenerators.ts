@@ -128,9 +128,9 @@ export class RetroBroadcastEngine {
     ctx.fillStyle = green;
     ctx.fillText("● 正在调谐载波频率 · TUNING CARRIER...", w / 2, midY - 30);
 
-    // 动态搜索锁定指示条
+    // 动态搜索锁定指示条：调谐中呈自然对数渐近推进至 95%，锁相完成前不虚假停留在 100%
     const barTotal = 16;
-    const progress = Math.min(1.0, tuningTime / 1.0);
+    const progress = Math.min(0.94, 1.0 - Math.exp(-tuningTime * 1.8));
     const filledBars = Math.floor(progress * barTotal);
     let barStr = "";
     for (let i = 0; i < barTotal; i++) {
