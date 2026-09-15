@@ -81,13 +81,13 @@ export class RetroBroadcastEngine {
     }
 
     // 2. 荧光点阵 OSD 风格参数
-    const green = "#39ff14";
-    const greenGlow = "rgba(57, 255, 20, 0.7)";
+    const green = "#34d399";
+    const greenGlow = "rgba(52, 211, 153, 0.35)";
     const freq = (168.25 + chNum * 8.0).toFixed(2);
 
     ctx.save();
     ctx.shadowColor = greenGlow;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 4;
 
     // 左上角主台标与频道号
     const badgeW = 160;
@@ -97,10 +97,10 @@ export class RetroBroadcastEngine {
 
     // 频道号边框盒
     ctx.strokeStyle = green;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.strokeRect(padX, padY, badgeW, badgeH);
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
     ctx.fillRect(padX, padY, badgeW, badgeH);
 
     ctx.fillStyle = green;
@@ -112,6 +112,7 @@ export class RetroBroadcastEngine {
     // 频道全称
     ctx.textAlign = "left";
     ctx.font = "bold 38px 'SimHei', 'Heiti SC', sans-serif";
+    ctx.fillStyle = "#f3f4f6";
     ctx.fillText(chName, padX + badgeW + 28, padY + badgeH / 2 + 4);
 
     // 射频技术参数栏
@@ -119,18 +120,17 @@ export class RetroBroadcastEngine {
     ctx.fillStyle = "#86efac";
     ctx.fillText(`[ PAL-D/K  VHF-H  ${freq} MHz  NICAM-STEREO ]`, padX, padY + badgeH + 34);
 
-    // 3. 中央搜台状态与锁定指示条
+    // 3. 中央搜台状态与锁定指示条 (去除高频刺眼闪烁，保持沉稳扎实的荧光显示)
     const midY = h * 0.52;
-    const blink = Math.floor(t * 3.5) % 2 === 0;
 
     ctx.textAlign = "center";
     ctx.font = "bold 26px 'Courier New', monospace";
-    ctx.fillStyle = blink ? green : "#16a34a";
+    ctx.fillStyle = green;
     ctx.fillText("● 正在调谐载波频率 · TUNING CARRIER...", w / 2, midY - 30);
 
     // 动态搜索锁定指示条
     const barTotal = 16;
-    const progress = Math.min(1.0, tuningTime / 0.8);
+    const progress = Math.min(1.0, tuningTime / 1.0);
     const filledBars = Math.floor(progress * barTotal);
     let barStr = "";
     for (let i = 0; i < barTotal; i++) {
@@ -138,12 +138,12 @@ export class RetroBroadcastEngine {
     }
 
     ctx.font = "bold 22px 'Courier New', monospace";
-    ctx.fillStyle = "#4ade80";
+    ctx.fillStyle = "#6ee7b7";
     ctx.fillText(`SIGNAL LOCK: [ ${barStr} ] ${(progress * 100).toFixed(0)}%`, w / 2, midY + 14);
 
     // 显像管底部射频提示
     ctx.font = "16px 'Courier New', monospace";
-    ctx.fillStyle = "rgba(134, 239, 172, 0.6)";
+    ctx.fillStyle = "rgba(134, 239, 172, 0.7)";
     ctx.fillText("SONY TRINITRON CATHODE RAY TUBE · AUTO FREQUENCY CONTROL", w / 2, h - 45);
 
     ctx.restore();

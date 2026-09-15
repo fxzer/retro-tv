@@ -38,6 +38,43 @@ export function CRTScreen({
   const tuneStartTimeRef = useRef<number>(performance.now());
   const tuningBlendRef = useRef<number>(1.0);
   const powerTransitionRef = useRef<number>(powerState === "on" ? 1.0 : 0.0);
+  // 记录用户是否已在页面产生有效交互（手势/按键），以解禁浏览器原生音频 Autoplay 策略
+  const userInteractedRef = useRef<boolean>(false);
+
+  // 安全起播辅助函数：遇到浏览器 Autoplay 策略拦截时自动回退为静音保活，保证视频帧持续解码
+  const safePlay = (videoEl: HTMLVideoElement | null) => {
+    if (!videoEl || powerState !== "on") return;
+    if (!userInteractedRef.current) {
+      videoEl.muted = true;
+    }
+    const playPromise = videoEl.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // 若因缺少用户交互被拦截，立刻转静音起播保活
+        videoEl.muted = true;
+        videoEl.play().catch(() => {});
+      });
+    }
+  };
+
+  // 监听全局手势事件：用户一旦触碰屏幕或键盘，安全解除静音限制
+  useEffect(() => {
+    const handleUserGesture = () => {
+      userInteractedRef.current = true;
+      const video = videoRef.current;
+      if (video && powerState === "on" && !isTuningRef.current) {
+        video.muted = isMuted;
+        video.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
+        video.play().catch(() => {});
+      }
+    };
+    window.addEventListener("pointerdown", handleUserGesture, { passive: true });
+    window.addEventListener("keydown", handleUserGesture, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", handleUserGesture);
+      window.removeEventListener("keydown", handleUserGesture);
+    };
+  }, [powerState, isMuted, volume]);
 
   // 初始化 DOM video 元素
   useEffect(() => {
@@ -51,7 +88,7 @@ export function CRTScreen({
     video.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
     video.style.display = "none";
     video.addEventListener("canplay", () => {
-      video.play().catch(() => {});
+      safePlay(video);
     });
     document.body.appendChild(video);
     videoRef.current = video;
@@ -100,17 +137,17 @@ export function CRTScreen({
     const isHls = /\.m3u8(?:$|\?)/i.test(streamUrl);
 
     if (isHls && Hls.isSupported()) {
-      // 方案 B：Hls.js 极速起播参数深度优化
+      // 极速且高容错的 Hls.js 参数：留足 3 块缓冲分片容灾，避免国内 5MB+ 大分片发生超时与顿挫
       const hls = new Hls({
-        enableWorker: true, // 启用 Worker 异步解复用，消除主线程卡顿
+        enableWorker: true,
         lowLatencyMode: true,
-        liveSyncDurationCount: 1, // 立即从首个分片起播，无需等待积攒 3 个分片
-        liveMaxLatencyDurationCount: 3,
-        maxBufferLength: 4, // 快速轻量缓冲
-        maxMaxBufferLength: 8,
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 6,
+        maxBufferLength: 8,
+        maxMaxBufferLength: 16,
         initialLiveManifestSize: 1,
-        fragLoadingTimeOut: 6000,
-        manifestLoadingTimeOut: 4000,
+        fragLoadingTimeOut: 15000,
+        manifestLoadingTimeOut: 8000,
       });
       hlsRef.current = hls;
 
@@ -118,15 +155,12 @@ export function CRTScreen({
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        // 静默预加载起播
-        video.muted = true;
-        video.play().catch(() => {});
+        safePlay(video);
       });
 
       hls.on(Hls.Events.FRAG_BUFFERED, () => {
-        // 分片缓冲就绪后触发播放
         if (video.paused) {
-          video.play().catch(() => {});
+          safePlay(video);
         }
       });
 
@@ -149,7 +183,7 @@ export function CRTScreen({
     } else {
       video.src = streamUrl;
       video.muted = true;
-      video.play().catch(() => {});
+      safePlay(video);
     }
   }, [channel.id, channel.streamUrl]);
 
@@ -159,9 +193,9 @@ export function CRTScreen({
     if (!video) return;
 
     if (powerState === "on") {
-      video.play().catch(() => {});
-      // 若当前未在换台调谐中，恢复真实伴音
-      if (!isTuningRef.current) {
+      safePlay(video);
+      // 若当前未在换台调谐中且用户已交互，恢复真实伴音
+      if (!isTuningRef.current && userInteractedRef.current) {
         video.muted = isMuted;
         video.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
       }
@@ -205,7 +239,7 @@ export function CRTScreen({
 
     // 若处于开机状态且视频暂停，自动唤醒起播
     if (powerState === "on" && video && video.paused && video.readyState >= 1) {
-      video.play().catch(() => {});
+      safePlay(video);
     }
 
     // 真实电视频道实时流是否就绪出帧（尺寸存在且已产生当前帧数据）
@@ -222,9 +256,11 @@ export function CRTScreen({
         isTuningRef.current = false;
         // 信号锁定完毕，若当前处于开机状态，确保起播并恢复广播伴音
         if (powerState === "on") {
-          video!.play().catch(() => {});
-          video!.muted = isMuted;
-          video!.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
+          if (userInteractedRef.current) {
+            video!.muted = isMuted;
+            video!.volume = isMuted ? 0 : Math.max(0, Math.min(1, volume / 100));
+          }
+          safePlay(video);
         }
       }
     } else if (channel.isTestCard && elapsed >= 0.35) {
@@ -252,19 +288,21 @@ export function CRTScreen({
       videoTextureRef.current.needsUpdate = true;
       crtMaterial.uniforms.uTexture.value = videoTextureRef.current;
     } else {
-      const hasError = elapsed > 8.0;
+      // 搜台调谐或网络抖动：放宽超时门限至 18 秒，避免国内 IPTV 初始大分片缓冲被误杀为“无信号”
+      const hasError = elapsed > 18.0;
       broadcastEngine.update(channel, state.clock.getElapsedTime(), isTuningRef.current, elapsed, hasError);
       crtMaterial.uniforms.uTexture.value = broadcastEngine.texture;
     }
 
     // 模拟电视高频雪花与水平同步撕裂计算
-    const baseNoise = ((100 - signalQuality) / 100) * 0.65;
-    const baseJitter = ((100 - signalQuality) / 100) * 0.12;
-    const baseGhosting = ((100 - signalQuality) / 100) * 0.4;
+    const baseNoise = ((100 - signalQuality) / 100) * 0.45;
+    const baseJitter = ((100 - signalQuality) / 100) * 0.04;
+    const baseGhosting = ((100 - signalQuality) / 100) * 0.2;
 
-    const tuningNoise = tuningBlendRef.current * 0.96;
-    const tuningJitter = tuningBlendRef.current * 0.16;
-    const tuningGhosting = tuningBlendRef.current * 0.35;
+    // 调谐时保留纯正复古显像管微噪与扫描质感，彻底消除剧烈撕裂抖动与暴风雪噪波，保证文字清晰平稳
+    const tuningNoise = tuningBlendRef.current * 0.08;
+    const tuningJitter = tuningBlendRef.current * 0.01;
+    const tuningGhosting = tuningBlendRef.current * 0.06;
 
     crtMaterial.uniforms.uNoise.value = Math.max(baseNoise, tuningNoise);
     crtMaterial.uniforms.uJitter.value = Math.max(baseJitter, tuningJitter);
