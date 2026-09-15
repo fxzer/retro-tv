@@ -322,22 +322,29 @@ export function RetroTV3D({
           </mesh>
         </group>
 
-        {/* --- B. 双色工作状态 LED 指示灯 --- */}
+        {/* --- B. 双色工作状态 LED 指示灯 (自然微光 3mm 指示灯) --- */}
         <group position={[-0.42, -0.02, 0.01]}>
-          <mesh>
-            <sphereGeometry args={[0.018, 16, 16]} />
+          {/* 黑色内嵌橡胶垫圈 (Bezel Ring) */}
+          <mesh position={[0, 0, 0]}>
+            <ringGeometry args={[0.008, 0.013, 24]} />
+            <meshStandardMaterial color="#181a1c" roughness={0.7} metalness={0.2} />
+          </mesh>
+          {/* 磨砂半透明微型 LED 凸起透镜 */}
+          <mesh position={[0, 0, 0.004]}>
+            <sphereGeometry args={[0.008, 16, 16]} />
             <meshStandardMaterial
-              color={isPowerOn ? "#10ff40" : "#ff2525"}
-              emissive={isPowerOn ? "#10ff40" : "#ff1515"}
-              emissiveIntensity={isPowerOn ? 2.2 : 0.8}
-              roughness={0.1}
+              color={isPowerOn ? "#22c55e" : "#dc2626"}
+              emissive={isPowerOn ? "#22c55e" : "#b91c1c"}
+              emissiveIntensity={isPowerOn ? 0.75 : 0.45}
+              roughness={0.35}
             />
           </mesh>
+          {/* 仅限制在灯珠边缘极微弱的环境色彩溢出 (半径仅 0.04，绝不投射至桌面) */}
           <pointLight
-            color={isPowerOn ? "#20ff50" : "#ff3030"}
-            intensity={isPowerOn ? 0.45 : 0.18}
-            distance={0.22}
-            position={[0, 0, 0.03]}
+            color={isPowerOn ? "#4ade80" : "#ef4444"}
+            intensity={isPowerOn ? 0.04 : 0.015}
+            distance={0.045}
+            position={[0, 0, 0.008]}
           />
         </group>
 
